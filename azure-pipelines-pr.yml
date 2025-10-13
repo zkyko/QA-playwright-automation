@@ -16,7 +16,9 @@ pr:
 trigger: none
 
 variables:
-  pythonVersion: '3.11'
+  - group: QA-Automation-Config
+  - name: pythonVersion
+    value: '3.11'
 
 jobs:
   - job: PR_Validation
@@ -41,14 +43,6 @@ jobs:
           playwright install chromium
         displayName: 'Install Playwright Browsers'
       
-      - task: AzureKeyVault@2
-        displayName: 'Fetch Secrets from Azure Key Vault'
-        inputs:
-          azureSubscription: 'FourHands-AzureServiceConnection'
-          KeyVaultName: 'fourhands-qa-keyvault'
-          SecretsFilter: 'D365-USERNAME,D365-PASSWORD,FH-USERNAME,FH-PASSWORD'
-          RunAsPreJob: true
-      
       - script: |
           export D365_BASE_URL="$(D365-BASE-URL)"
           export D365_USERNAME="$(D365-USERNAME)"
@@ -56,8 +50,8 @@ jobs:
           export FH_BASE_URL="$(FH-BASE-URL)"
           export FH_USERNAME="$(FH-USERNAME)"
           export FH_PASSWORD="$(FH-PASSWORD)"
-          export HEADED=false
-          export TIMEOUT=30000
+          export HEADED=$(HEADED)
+          export TIMEOUT=$(TIMEOUT)
           
           pytest tests/ -m smoke -v \
             --alluredir=reports/allure-results \
