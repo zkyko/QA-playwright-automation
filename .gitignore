@@ -1,0 +1,159 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+pip-wheel-metadata/
+share/python-wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# Virtual Environment
+venv/
+ENV/
+env/
+.venv
+
+# PyCharm
+.idea/
+
+# VS Code
+.vscode/
+*.code-workspace
+
+# Environment variables
+.env
+.env.local
+.env.*.local
+
+# Test Results & Reports
+reports/
+test-results/
+playwright-report/
+.pytest_cache/
+*.log
+*.xml
+htmlcov/
+.coverage
+.coverage.*
+coverage.xml
+*.cover
+.hypothesis/
+.tox/
+nosetests.xml
+
+# Allure
+allure-results/
+allure-report/
+
+# Storage State (contains auth tokens)
+storage_state/
+
+# Playwright
+playwright/.auth/
+
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+._*
+
+# Windows
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+
+# Linux
+*~
+.fuse_hidden*
+.directory
+.Trash-*
+
+# Logs
+logs/
+log/
+*.log
+
+# Screenshots & Videos (if too large)
+screenshots/
+videos/
+
+# Temporary files
+*.tmp
+*.temp
+*.swp
+*.swo
+*~
+
+# BrowserStack Local binary
+BrowserStackLocal
+BrowserStackLocal.exe
+
+# Node modules (for Allure CLI)
+node_modules/
+
+# Backup files
+*.bak
+*.backup
+*.old
+
+# IDE specific
+*.sublime-project
+*.sublime-workspace
+
+# Azure specific
+.azure/
+
+# Ignore compiled Python files
+*.pyc
+*.pyo
+
+# Jupyter Notebook
+.ipynb_checkpoints
+
+# mypy
+.mypy_cache/
+.dmypy.json
+dmypy.json
+
+# Pyre type checker
+.pyre/
+
+# pytype static type analyzer
+.pytype/
+
+# Cython debug symbols
+cython_debug/
+
+# ========================================
+# Migration & Reference Files (Exclude from Azure DevOps)
+# ========================================
+
+# Cleanup and migration scripts (not needed in Azure DevOps)
+scripts/cleanup_poc_files.ps1
+scripts/cleanup_poc_files.sh
+scripts/migrate_to_azure_devops.ps1
+
+# Reference documentation (keep only essential docs)
+START_HERE.md
+QUICK_REFERENCE.md
+CLEANUP_SUMMARY.md
+MIGRATION_COMPLETE.txt
+WINDOWS_QUICKSTART.md
+GIT_MIGRATION_GUIDE.md

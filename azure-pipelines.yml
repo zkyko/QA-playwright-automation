@@ -1,0 +1,207 @@
+# Azure DevOps CI/CD Pipeline - Four Hands QA Automation
+# Playwright + Pytest + BrowserStack + Allure Reports
+# Triggers on: Push to main/develop branches
+
+trigger:
+  branches:
+    include:
+      - main
+      - develop
+      - release/*
+  paths:
+    exclude:
+      - README.md
+      - docs/*
+
+pr:
+  branches:
+    include:
+      - main
+      - develop
+  paths:
+    exclude:
+      - README.md
+      - docs/*
+
+variables:
+  pythonVersion: '3.11'
+  nodeVersion: '18.x'
+
+stages:
+  - stage: Test
+    displayName: 'Run Tests'
+    jobs:
+      - job: Smoke_Tests
+        displayName: 'Smoke Tests (Local Agent)'
+        pool:
+          vmImage: 'ubuntu-latest'
+        
+        steps:
+          - task: UsePythonVersion@0
+            displayName: 'Set Python Version'
+            inputs:
+              versionSpec: '$(pythonVersion)'
+              addToPath: true
+          
+          - script: |
+              python -m pip install --upgrade pip
+              pip install -r requirements.txt
+            displayName: 'Install Dependencies'
+          
+          - script: |
+              playwright install chromium
+            displayName: 'Install Playwright Browsers'
+          
+          - task: AzureKeyVault@2
+            displayName: 'Fetch Secrets from Azure Key Vault'
+            inputs:
+              azureSubscription: 'FourHands-AzureServiceConnection'
+              KeyVaultName: 'fourhands-qa-keyvault'
+              SecretsFilter: 'D365-USERNAME,D365-PASSWORD,FH-USERNAME,FH-PASSWORD'
+              RunAsPreJob: true
+          
+          - script: |
+              export D365_BASE_URL="$(D365-BASE-URL)"
+              export D365_USERNAME="$(D365-USERNAME)"
+              export D365_PASSWORD="$(D365-PASSWORD)"
+              export FH_BASE_URL="$(FH-BASE-URL)"
+              export FH_USERNAME="$(FH-USERNAME)"
+              export FH_PASSWORD="$(FH-PASSWORD)"
+              export HEADED=false
+              export TIMEOUT=30000
+              
+              pytest tests/ -m smoke -v \
+                --alluredir=reports/allure-results \
+                --maxfail=5 \
+                --tb=short
+            displayName: 'Run Smoke Tests'
+            continueOnError: false
+          
+          - task: PublishTestResults@2
+            displayName: 'Publish Test Results'
+            condition: always()
+            inputs:
+              testResultsFormat: 'JUnit'
+              testResultsFiles: 'reports/junit/*.xml'
+              testRunTitle: 'Smoke Tests - $(Build.BuildNumber)'
+              failTaskOnFailedTests: true
+          
+          - task: PublishBuildArtifacts@1
+            displayName: 'Publish Allure Results'
+            condition: always()
+            inputs:
+              PathtoPublish: 'reports/allure-results'
+              ArtifactName: 'allure-results'
+              publishLocation: 'Container'
+          
+          - task: PublishBuildArtifacts@1
+            displayName: 'Publish Screenshots'
+            condition: failed()
+            inputs:
+              PathtoPublish: 'test-results'
+              ArtifactName: 'test-results'
+              publishLocation: 'Container'
+
+      - job: E2E_Tests
+        displayName: 'E2E Tests (Local Agent)'
+        dependsOn: Smoke_Tests
+        condition: succeeded()
+        pool:
+          vmImage: 'ubuntu-latest'
+        
+        steps:
+          - task: UsePythonVersion@0
+            displayName: 'Set Python Version'
+            inputs:
+              versionSpec: '$(pythonVersion)'
+              addToPath: true
+          
+          - script: |
+              python -m pip install --upgrade pip
+              pip install -r requirements.txt
+            displayName: 'Install Dependencies'
+          
+          - script: |
+              playwright install chromium
+            displayName: 'Install Playwright Browsers'
+          
+          - task: AzureKeyVault@2
+            displayName: 'Fetch Secrets from Azure Key Vault'
+            inputs:
+              azureSubscription: 'FourHands-AzureServiceConnection'
+              KeyVaultName: 'fourhands-qa-keyvault'
+              SecretsFilter: '*'
+              RunAsPreJob: true
+          
+          - script: |
+              export D365_BASE_URL="$(D365-BASE-URL)"
+              export D365_USERNAME="$(D365-USERNAME)"
+              export D365_PASSWORD="$(D365-PASSWORD)"
+              export FH_BASE_URL="$(FH-BASE-URL)"
+              export FH_USERNAME="$(FH-USERNAME)"
+              export FH_PASSWORD="$(FH-PASSWORD)"
+              export HEADED=false
+              export TIMEOUT=30000
+              
+              pytest tests/ -m "e2e" -v \
+                --alluredir=reports/allure-results \
+                --tb=short \
+                -n auto
+            displayName: 'Run E2E Tests (Parallel)'
+            continueOnError: true
+          
+          - task: PublishTestResults@2
+            displayName: 'Publish Test Results'
+            condition: always()
+            inputs:
+              testResultsFormat: 'JUnit'
+              testResultsFiles: 'reports/junit/*.xml'
+              testRunTitle: 'E2E Tests - $(Build.BuildNumber)'
+          
+          - task: PublishBuildArtifacts@1
+            displayName: 'Publish Allure Results'
+            condition: always()
+            inputs:
+              PathtoPublish: 'reports/allure-results'
+              ArtifactName: 'allure-results-e2e'
+              publishLocation: 'Container'
+
+  - stage: Report
+    displayName: 'Generate Allure Report'
+    dependsOn: Test
+    condition: always()
+    jobs:
+      - job: Allure_Report
+        displayName: 'Generate & Publish Allure Report'
+        pool:
+          vmImage: 'ubuntu-latest'
+        
+        steps:
+          - task: DownloadBuildArtifacts@1
+            displayName: 'Download Allure Results'
+            inputs:
+              buildType: 'current'
+              downloadType: 'single'
+              artifactName: 'allure-results'
+              downloadPath: 'reports'
+          
+          - task: NodeTool@0
+            displayName: 'Install Node.js'
+            inputs:
+              versionSpec: '$(nodeVersion)'
+          
+          - script: |
+              npm install -g allure-commandline
+              allure generate reports/allure-results -o reports/allure-report --clean
+            displayName: 'Generate Allure Report'
+          
+          - task: PublishBuildArtifacts@1
+            displayName: 'Publish Allure Report'
+            inputs:
+              PathtoPublish: 'reports/allure-report'
+              ArtifactName: 'allure-report'
+              publishLocation: 'Container'
+          
+          - script: |
+              echo "Allure Report URL: https://dev.azure.com/fourhands/$(System.TeamProject)/_build/results?buildId=$(Build.BuildId)&view=artifacts"
+            displayName: 'Print Report URL'

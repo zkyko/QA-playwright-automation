@@ -1,0 +1,129 @@
+# Azure DevOps BrowserStack Pipeline
+# Cross-browser testing on BrowserStack Automate
+# Triggers: Scheduled (nightly) or Manual
+
+trigger: none
+
+pr: none
+
+schedules:
+  - cron: "0 2 * * *"  # 2 AM UTC daily
+    displayName: 'Nightly BrowserStack Tests'
+    branches:
+      include:
+        - main
+    always: true
+
+parameters:
+  - name: testSuite
+    displayName: 'Test Suite'
+    type: string
+    default: 'smoke'
+    values:
+      - smoke
+      - e2e
+      - d365
+      - fourhands
+      - all
+  
+  - name: browsers
+    displayName: 'Browsers'
+    type: string
+    default: 'chrome,edge,safari'
+  
+  - name: os
+    displayName: 'Operating System'
+    type: string
+    default: 'Windows'
+    values:
+      - Windows
+      - OS X
+      - Both
+
+variables:
+  pythonVersion: '3.11'
+
+jobs:
+  - job: BrowserStack_Tests
+    displayName: 'BrowserStack Cross-Browser Tests'
+    pool:
+      vmImage: 'ubuntu-latest'
+    timeoutInMinutes: 60
+    
+    steps:
+      - task: UsePythonVersion@0
+        displayName: 'Set Python Version'
+        inputs:
+          versionSpec: '$(pythonVersion)'
+          addToPath: true
+      
+      - script: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+        displayName: 'Install Dependencies'
+      
+      - task: AzureKeyVault@2
+        displayName: 'Fetch Secrets from Azure Key Vault'
+        inputs:
+          azureSubscription: 'FourHands-AzureServiceConnection'
+          KeyVaultName: 'fourhands-qa-keyvault'
+          SecretsFilter: '*'
+          RunAsPreJob: true
+      
+      - script: |
+          export BROWSERSTACK_USERNAME="$(BROWSERSTACK-USERNAME)"
+          export BROWSERSTACK_ACCESS_KEY="$(BROWSERSTACK-ACCESS-KEY)"
+          export D365_BASE_URL="$(D365-BASE-URL)"
+          export D365_USERNAME="$(D365-USERNAME)"
+          export D365_PASSWORD="$(D365-PASSWORD)"
+          export FH_BASE_URL="$(FH-BASE-URL)"
+          export FH_USERNAME="$(FH-USERNAME)"
+          export FH_PASSWORD="$(FH-PASSWORD)"
+          export USE_BROWSERSTACK=true
+          export BS_PROJECT="FourHands-QA-Automation"
+          export BS_BUILD="Build-$(Build.BuildNumber)"
+          export HEADED=false
+          export TIMEOUT=60000
+          
+          # Run tests based on parameter
+          if [ "${{ parameters.testSuite }}" = "all" ]; then
+            pytest tests/ -v --alluredir=reports/allure-results
+          else
+            pytest tests/ -m "${{ parameters.testSuite }}" -v --alluredir=reports/allure-results
+          fi
+        displayName: 'Run Tests on BrowserStack'
+        continueOnError: true
+      
+      - task: PublishTestResults@2
+        displayName: 'Publish Test Results'
+        condition: always()
+        inputs:
+          testResultsFormat: 'JUnit'
+          testResultsFiles: 'reports/junit/*.xml'
+          testRunTitle: 'BrowserStack Tests - $(Build.BuildNumber)'
+      
+      - task: PublishBuildArtifacts@1
+        displayName: 'Publish Allure Results'
+        condition: always()
+        inputs:
+          PathtoPublish: 'reports/allure-results'
+          ArtifactName: 'browserstack-allure-results'
+          publishLocation: 'Container'
+      
+      - script: |
+          echo "##[section]BrowserStack Test Summary"
+          echo "Build: $(Build.BuildNumber)"
+          echo "Test Suite: ${{ parameters.testSuite }}"
+          echo "Browsers: ${{ parameters.browsers }}"
+          echo "OS: ${{ parameters.os }}"
+          echo "BrowserStack Dashboard: https://automate.browserstack.com/dashboard/v2"
+        displayName: 'Print BrowserStack Summary'
+        condition: always()
+      
+      - task: PublishBuildArtifacts@1
+        displayName: 'Publish Videos & Screenshots'
+        condition: always()
+        inputs:
+          PathtoPublish: 'test-results'
+          ArtifactName: 'browserstack-test-results'
+          publishLocation: 'Container'
