@@ -17,12 +17,18 @@ jobs:
     steps:
     - name: Checkout code
       uses: actions/checkout@v4
-    
-    - name: Deploy landing page to GitHub Pages
-      uses: peaceiris/actions-gh-pages@v3
       with:
-        github_token: ${{ secrets.GITHUB_TOKEN }}
-        publish_dir: .
-        keep_files: true
-        publish_branch: gh-pages
-        exclude_assets: '.github,tests,pages,configs,utils,storage_state,scripts,docs,.git*,*.py,*.ini,*.txt,*.md,*.yml'
+        ref: gh-pages
+    
+    - name: Copy index.html from main
+      run: |
+        git fetch origin main
+        git checkout origin/main -- index.html
+    
+    - name: Commit and push
+      run: |
+        git config user.name "GitHub Actions"
+        git config user.email "actions@github.com"
+        git add index.html
+        git commit -m "Update landing page" || echo "No changes to commit"
+        git push origin gh-pages
