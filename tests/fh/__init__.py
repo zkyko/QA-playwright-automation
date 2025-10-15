@@ -1,1 +1,0 @@
-"""FourHands tests package."""
