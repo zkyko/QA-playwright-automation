@@ -16,30 +16,26 @@ jobs:
       with:
         python-version: '3.11'
     
-    - name: Set up Node.js
-      uses: actions/setup-node@v4
-      with:
-        node-version: '18'
-    
     - name: Install dependencies
       run: |
         python -m pip install --upgrade pip
         pip install -r requirements.txt
         playwright install chromium
-        npm install -g browserstack-sdk
     
-    - name: Run smoke tests
+    - name: Run smoke tests locally (no BrowserStack)
       env:
-        BROWSERSTACK_USERNAME: ${{ secrets.BROWSERSTACK_USERNAME }}
-        BROWSERSTACK_ACCESS_KEY: ${{ secrets.BROWSERSTACK_ACCESS_KEY }}
         D365_USERNAME: ${{ secrets.D365_USERNAME }}
         D365_PASSWORD: ${{ secrets.D365_PASSWORD }}
+        HEADED: false
       run: |
-        browserstack-sdk pytest tests/d365/test_d365_sales_order.py::test_d365_login_page_loads -v
+        pytest tests/d365/test_d365_sales_order.py::test_d365_login_page_loads -v
     
     - name: Upload results
       if: always()
       uses: actions/upload-artifact@v4
       with:
         name: smoke-test-results
-        path: test-results/
+        path: |
+          test-results/
+          reports/
+        if-no-files-found: ignore

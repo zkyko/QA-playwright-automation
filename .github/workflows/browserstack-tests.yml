@@ -7,10 +7,6 @@ on:
   # Scheduled trigger (every day at 2 AM UTC)
   schedule:
     - cron: '0 2 * * *'
-  
-  # Trigger on push (optional)
-  # push:
-  #   branches: [ main ]
 
 jobs:
   test:
@@ -25,11 +21,6 @@ jobs:
       with:
         python-version: '3.11'
     
-    - name: Set up Node.js
-      uses: actions/setup-node@v4
-      with:
-        node-version: '18'
-    
     - name: Install Python dependencies
       run: |
         python -m pip install --upgrade pip
@@ -39,9 +30,11 @@ jobs:
       run: |
         playwright install chromium
     
-    - name: Install BrowserStack SDK
-      run: |
-        npm install -g browserstack-sdk
+    - name: Setup BrowserStack environment
+      uses: browserstack/github-actions/setup-env@master
+      with:
+        username: ${{ secrets.BROWSERSTACK_USERNAME }}
+        access-key: ${{ secrets.BROWSERSTACK_ACCESS_KEY }}
     
     - name: Run tests on BrowserStack
       env:
@@ -50,7 +43,7 @@ jobs:
         D365_USERNAME: ${{ secrets.D365_USERNAME }}
         D365_PASSWORD: ${{ secrets.D365_PASSWORD }}
       run: |
-        browserstack-sdk pytest tests/d365/test_d365_create_sales_order_complete.py::test_d365_create_sales_order_complete -v
+        pytest tests/d365/test_d365_create_sales_order_complete.py::test_d365_create_sales_order_complete -v --browser chromium --headed=false
     
     - name: Upload test results
       if: always()
@@ -60,4 +53,4 @@ jobs:
         path: |
           test-results/
           reports/
-          *.log
+        if-no-files-found: ignore
