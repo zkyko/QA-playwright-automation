@@ -24,14 +24,15 @@ jobs:
         pip install -r requirements.txt
         playwright install chromium
     
-    - name: Run tests on BrowserStack Cloud
+    - name: Run tests locally on GitHub Actions
       env:
         BROWSERSTACK_USERNAME: ${{ secrets.BROWSERSTACK_USERNAME }}
         BROWSERSTACK_ACCESS_KEY: ${{ secrets.BROWSERSTACK_ACCESS_KEY }}
         D365_USERNAME: ${{ secrets.D365_USERNAME }}
         D365_PASSWORD: ${{ secrets.D365_PASSWORD }}
-        USE_BROWSERSTACK: "true"
+        HEADED: false
       run: |
+        # Run tests locally (not on BrowserStack for now)
         pytest tests/d365/test_d365_sales_order.py::test_d365_login_page_loads -v
     
     - name: Upload test results
