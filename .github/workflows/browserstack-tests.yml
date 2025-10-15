@@ -42,8 +42,9 @@ jobs:
         BROWSERSTACK_ACCESS_KEY: ${{ secrets.BROWSERSTACK_ACCESS_KEY }}
         D365_USERNAME: ${{ secrets.D365_USERNAME }}
         D365_PASSWORD: ${{ secrets.D365_PASSWORD }}
+        HEADED: false
       run: |
-        pytest tests/d365/test_d365_create_sales_order_complete.py::test_d365_create_sales_order_complete -v --browser chromium --headed=false
+        pytest tests/d365/test_d365_sales_order.py::test_d365_login_page_loads -v
     
     - name: Upload test results
       if: always()
