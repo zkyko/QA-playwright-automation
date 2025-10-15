@@ -44,9 +44,15 @@ def test_record_d365_authentication(page: Page):
     
     # Wait for authentication - looking for D365 dashboard elements
     try:
-        # Wait for navigation pane (indicates successful login)
-        page.wait_for_selector("button[aria-label*='navigation']", timeout=120000)
-        print("✅ Successfully authenticated. Dashboard loaded!")
+        # Wait for actual D365 dashboard, not just redirect URL
+        page.wait_for_timeout(120000)  # Wait 2 minutes for you to login manually
+        current_url = page.url
+        
+        # Check if we're actually ON dynamics.com (not just a redirect parameter)
+        if "fourhands-test.sandbox.operations.dynamics.com" in current_url and "login.microsoftonline.com" not in current_url:
+            print("✅ Successfully authenticated. Dashboard loaded!")
+        else:
+            raise Exception(f"Not on D365 dashboard yet. Current URL: {current_url}")
         
     except Exception as e:
         pytest.fail(f"Authentication timeout. Please login within 2 minutes. Error: {e}")

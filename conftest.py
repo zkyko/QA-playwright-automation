@@ -79,14 +79,21 @@ def browser_context_args():
 @pytest.fixture(scope="session")
 def playwright_browser(playwright: Playwright) -> Generator[Browser, None, None]:
     """Provide browser instance (local or BrowserStack)."""
-    if is_browserstack_enabled():
-        cdp_url = get_cdp_url()
-        browser = playwright.chromium.connect_over_cdp(cdp_url)
+    # Check if running with browserstack-sdk CLI
+    # BrowserStack SDK doesn't set BROWSERSTACK_BUILD_NAME immediately
+    # Instead, just check if USE_BROWSERSTACK is explicitly false
+    use_bs = os.getenv("USE_BROWSERSTACK", "false").lower()
+    
+    if use_bs == "false" or use_bs == "":
+        # Local execution - don't try BrowserStack
+        launch_options = get_browser_launch_options()
+        browser = playwright.chromium.launch(**launch_options)
         yield browser
         browser.close()
     else:
-        launch_options = get_browser_launch_options()
-        browser = playwright.chromium.launch(**launch_options)
+        # BrowserStack execution via CDP
+        cdp_url = get_cdp_url()
+        browser = playwright.chromium.connect_over_cdp(cdp_url)
         yield browser
         browser.close()
 

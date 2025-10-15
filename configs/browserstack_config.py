@@ -69,15 +69,17 @@ def get_cdp_url():
             "Set BROWSERSTACK_USERNAME and BROWSERSTACK_ACCESS_KEY environment variables."
         )
     
-    capabilities = get_browserstack_capabilities()
-    
-    # Encode capabilities as URL parameters
-    caps_param = urllib.parse.quote(str(capabilities))
-    
-    # Construct CDP endpoint URL
+    # BrowserStack CDP URL format for Playwright
+    # Use simple format without complex capability encoding
     cdp_url = (
         f"wss://cdp.browserstack.com/playwright?"
-        f"caps={caps_param}"
+        f"caps.browserName=chrome&"
+        f"caps.browserVersion=latest&"
+        f"caps.os=Windows&"
+        f"caps.osVersion=11&"
+        f"caps.projectName={urllib.parse.quote(BS_PROJECT)}&"
+        f"caps.buildName={urllib.parse.quote(BS_BUILD)}&"
+        f"caps.sessionName={urllib.parse.quote(os.getenv('PYTEST_CURRENT_TEST', 'D365 Test'))}"
     )
     
     return cdp_url

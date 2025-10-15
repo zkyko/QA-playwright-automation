@@ -1,5 +1,5 @@
 # Azure DevOps CI/CD Pipeline - Four Hands QA Automation
-# Playwright + Pytest + BrowserStack + Allure Reports
+# Playwright + Pytest + BrowserStack + Allure Reports + Jira/Zephyr Integration
 # Triggers on: Push to main/develop branches
 
 trigger:
@@ -25,19 +25,62 @@ pr:
 
 variables:
   - group: QA-Automation-Config
+  - group: Jira-Zephyr-Config  # New variable group for Jira/Zephyr credentials
   - name: pythonVersion
     value: '3.11'
   - name: nodeVersion
     value: '18.x'
+  - name: testCycleKey
+    value: ''  # Will be set dynamically
 
 stages:
   - stage: Test
     displayName: 'Run Tests'
     jobs:
-      - job: Smoke_Tests
-        displayName: 'Smoke Tests (Local Agent)'
+      - job: Setup_Jira_Test_Cycle
+        displayName: 'Setup Jira Test Cycle'
         pool:
           vmImage: 'ubuntu-latest'
+        
+        steps:
+          - task: UsePythonVersion@0
+            displayName: 'Set Python Version'
+            inputs:
+              versionSpec: '$(pythonVersion)'
+              addToPath: true
+          
+          - script: |
+              python -m pip install --upgrade pip
+              pip install requests python-dotenv
+            displayName: 'Install Dependencies'
+          
+          - script: |
+              python utils/jira_integration.py create-cycle \
+                --name "Automated Test Run - Build $(Build.BuildNumber)" \
+                --project "$(JIRA_PROJECT_KEY)" \
+                --version "$(JIRA_VERSION)"
+            displayName: 'Create Zephyr Test Cycle'
+            env:
+              JIRA_BASE_URL: $(JIRA_BASE_URL)
+              JIRA_EMAIL: $(JIRA_EMAIL)
+              JIRA_API_TOKEN: $(JIRA_API_TOKEN)
+              JIRA_PROJECT_KEY: $(JIRA_PROJECT_KEY)
+            name: CreateCycle
+          
+          - powershell: |
+              $testCycleKey = Get-Content -Path "test_cycle_key.txt"
+              Write-Host "##vso[task.setvariable variable=testCycleKey;isOutput=true]$testCycleKey"
+              Write-Host "Test Cycle Key: $testCycleKey"
+            displayName: 'Set Test Cycle Key Variable'
+            name: SetCycleKey
+
+      - job: Smoke_Tests
+        displayName: 'Smoke Tests (Local Agent)'
+        dependsOn: Setup_Jira_Test_Cycle
+        pool:
+          vmImage: 'ubuntu-latest'
+        variables:
+          testCycleKey: $[ dependencies.Setup_Jira_Test_Cycle.outputs['SetCycleKey.testCycleKey'] ]
         
         steps:
           - task: UsePythonVersion@0
@@ -64,13 +107,32 @@ stages:
               export FH_PASSWORD="$(FH-PASSWORD)"
               export HEADED=$(HEADED)
               export TIMEOUT=$(TIMEOUT)
+              export JIRA_BASE_URL="$(JIRA_BASE_URL)"
+              export JIRA_EMAIL="$(JIRA_EMAIL)"
+              export JIRA_API_TOKEN="$(JIRA_API_TOKEN)"
+              export JIRA_PROJECT_KEY="$(JIRA_PROJECT_KEY)"
+              export ZEPHYR_CYCLE_KEY="$(testCycleKey)"
               
               pytest tests/ -m smoke -v \
                 --alluredir=reports/allure-results \
+                --junitxml=reports/junit/smoke-results.xml \
                 --maxfail=5 \
                 --tb=short
             displayName: 'Run Smoke Tests'
             continueOnError: false
+          
+          - script: |
+              python utils/jira_integration.py update-results \
+                --cycle "$(testCycleKey)" \
+                --results "reports/junit/smoke-results.xml" \
+                --test-type "smoke"
+            displayName: 'Update Jira Test Results'
+            condition: always()
+            env:
+              JIRA_BASE_URL: $(JIRA_BASE_URL)
+              JIRA_EMAIL: $(JIRA_EMAIL)
+              JIRA_API_TOKEN: $(JIRA_API_TOKEN)
+              JIRA_PROJECT_KEY: $(JIRA_PROJECT_KEY)
           
           - task: PublishTestResults@2
             displayName: 'Publish Test Results'
@@ -99,10 +161,14 @@ stages:
 
       - job: E2E_Tests
         displayName: 'E2E Tests (Local Agent)'
-        dependsOn: Smoke_Tests
+        dependsOn: 
+          - Setup_Jira_Test_Cycle
+          - Smoke_Tests
         condition: succeeded()
         pool:
           vmImage: 'ubuntu-latest'
+        variables:
+          testCycleKey: $[ dependencies.Setup_Jira_Test_Cycle.outputs['SetCycleKey.testCycleKey'] ]
         
         steps:
           - task: UsePythonVersion@0
@@ -129,13 +195,32 @@ stages:
               export FH_PASSWORD="$(FH-PASSWORD)"
               export HEADED=$(HEADED)
               export TIMEOUT=$(TIMEOUT)
+              export JIRA_BASE_URL="$(JIRA_BASE_URL)"
+              export JIRA_EMAIL="$(JIRA_EMAIL)"
+              export JIRA_API_TOKEN="$(JIRA_API_TOKEN)"
+              export JIRA_PROJECT_KEY="$(JIRA_PROJECT_KEY)"
+              export ZEPHYR_CYCLE_KEY="$(testCycleKey)"
               
               pytest tests/ -m "e2e" -v \
                 --alluredir=reports/allure-results \
+                --junitxml=reports/junit/e2e-results.xml \
                 --tb=short \
                 -n auto
             displayName: 'Run E2E Tests (Parallel)'
             continueOnError: true
+          
+          - script: |
+              python utils/jira_integration.py update-results \
+                --cycle "$(testCycleKey)" \
+                --results "reports/junit/e2e-results.xml" \
+                --test-type "e2e"
+            displayName: 'Update Jira Test Results'
+            condition: always()
+            env:
+              JIRA_BASE_URL: $(JIRA_BASE_URL)
+              JIRA_EMAIL: $(JIRA_EMAIL)
+              JIRA_API_TOKEN: $(JIRA_API_TOKEN)
+              JIRA_PROJECT_KEY: $(JIRA_PROJECT_KEY)
           
           - task: PublishTestResults@2
             displayName: 'Publish Test Results'
@@ -154,7 +239,7 @@ stages:
               publishLocation: 'Container'
 
   - stage: Report
-    displayName: 'Generate Allure Report'
+    displayName: 'Generate Reports & Update Jira'
     dependsOn: Test
     condition: always()
     jobs:
@@ -192,3 +277,52 @@ stages:
           - script: |
               echo "Allure Report URL: https://dev.azure.com/nbhandari0887/$(System.TeamProject)/_build/results?buildId=$(Build.BuildId)&view=artifacts"
             displayName: 'Print Report URL'
+
+      - job: Update_Jira_Summary
+        displayName: 'Update Jira Test Cycle Summary'
+        dependsOn: Allure_Report
+        condition: always()
+        pool:
+          vmImage: 'ubuntu-latest'
+        
+        steps:
+          - task: UsePythonVersion@0
+            displayName: 'Set Python Version'
+            inputs:
+              versionSpec: '$(pythonVersion)'
+              addToPath: true
+          
+          - script: |
+              python -m pip install --upgrade pip
+              pip install requests python-dotenv
+            displayName: 'Install Dependencies'
+          
+          - task: DownloadBuildArtifacts@1
+            displayName: 'Download Test Results'
+            inputs:
+              buildType: 'current'
+              downloadType: 'specific'
+          
+          - script: |
+              python utils/jira_integration.py finalize-cycle \
+                --cycle "$(testCycleKey)" \
+                --build "$(Build.BuildNumber)" \
+                --build-url "$(System.TeamFoundationCollectionUri)$(System.TeamProject)/_build/results?buildId=$(Build.BuildId)"
+            displayName: 'Finalize Jira Test Cycle'
+            env:
+              JIRA_BASE_URL: $(JIRA_BASE_URL)
+              JIRA_EMAIL: $(JIRA_EMAIL)
+              JIRA_API_TOKEN: $(JIRA_API_TOKEN)
+              JIRA_PROJECT_KEY: $(JIRA_PROJECT_KEY)
+          
+          - script: |
+              python utils/jira_integration.py create-defects \
+                --cycle "$(testCycleKey)" \
+                --build "$(Build.BuildNumber)"
+            displayName: 'Create Jira Defects for Failures'
+            condition: failed()
+            env:
+              JIRA_BASE_URL: $(JIRA_BASE_URL)
+              JIRA_EMAIL: $(JIRA_EMAIL)
+              JIRA_API_TOKEN: $(JIRA_API_TOKEN)
+              JIRA_PROJECT_KEY: $(JIRA_PROJECT_KEY)
