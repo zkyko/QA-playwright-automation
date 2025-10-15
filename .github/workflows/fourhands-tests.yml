@@ -1,0 +1,59 @@
+name: FourHands Tests & Allure Report
+
+permissions:
+  contents: write
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '0 3 * * *'
+
+jobs:
+  fourhands-tests:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+    
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.11'
+    
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
+        pip install allure-pytest
+        playwright install chromium
+    
+    - name: Run FourHands Tests
+      env:
+        FH_USERNAME: ${{ secrets.FH_USERNAME }}
+        FH_PASSWORD: ${{ secrets.FH_PASSWORD }}
+        HEADED: false
+      run: |
+        pytest tests/fh/test_fh_pdp.py -v \
+          --alluredir=allure-results \
+          --screenshot=on \
+          --video=retain-on-failure
+      continue-on-error: true
+    
+    - name: Generate Allure Report
+      uses: simple-elf/allure-report-action@master
+      if: always()
+      with:
+        allure_results: allure-results
+        allure_report: allure-report
+        gh_pages: gh-pages
+        allure_history: allure-history-fh
+    
+    - name: Deploy to GitHub Pages
+      if: always()
+      uses: peaceiris/actions-gh-pages@v3
+      with:
+        github_token: ${{ secrets.GITHUB_TOKEN }}
+        publish_dir: allure-history-fh
+        destination_dir: fourhands
+        keep_files: true
