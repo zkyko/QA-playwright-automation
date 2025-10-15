@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>QA Automation Test Reports</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+        
+        .container {
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            padding: 60px;
+            max-width: 800px;
+            width: 100%;
+        }
+        
+        h1 {
+            color: #333;
+            font-size: 2.5em;
+            margin-bottom: 10px;
+            text-align: center;
+        }
+        
+        .subtitle {
+            color: #666;
+            text-align: center;
+            margin-bottom: 50px;
+            font-size: 1.1em;
+        }
+        
+        .reports {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 30px;
+            margin-top: 40px;
+        }
+        
+        .report-card {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-radius: 15px;
+            padding: 40px 30px;
+            text-align: center;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+            cursor: pointer;
+            text-decoration: none;
+            color: white;
+        }
+        
+        .report-card:hover {
+            transform: translateY(-10px);
+            box-shadow: 0 15px 40px rgba(102, 126, 234, 0.4);
+        }
+        
+        .report-card h2 {
+            font-size: 1.8em;
+            margin-bottom: 15px;
+        }
+        
+        .report-card p {
+            opacity: 0.9;
+            font-size: 1em;
+            line-height: 1.6;
+        }
+        
+        .icon {
+            font-size: 3em;
+            margin-bottom: 20px;
+        }
+        
+        .footer {
+            margin-top: 50px;
+            text-align: center;
+            color: #999;
+            font-size: 0.9em;
+        }
+        
+        .status {
+            display: inline-block;
+            background: rgba(255,255,255,0.2);
+            padding: 5px 15px;
+            border-radius: 20px;
+            font-size: 0.85em;
+            margin-top: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🚀 QA Automation</h1>
+        <p class="subtitle">Test Reports Dashboard</p>
+        
+        <div class="reports">
+            <a href="./d365/" class="report-card">
+                <div class="icon">💼</div>
+                <h2>D365 Tests</h2>
+                <p>Microsoft Dynamics 365 Finance & Operations test results</p>
+                <span class="status">View Report →</span>
+            </a>
+            
+            <a href="./fourhands/" class="report-card">
+                <div class="icon">🛍️</div>
+                <h2>FourHands Tests</h2>
+                <p>E-commerce platform test results with screenshots</p>
+                <span class="status">View Report →</span>
+            </a>
+        </div>
+        
+        <div class="footer">
+            <p>Powered by Playwright + Allure + GitHub Actions</p>
+            <p>Reports update automatically on every test run</p>
+        </div>
+    </div>
+</body>
+</html>
