@@ -1,4 +1,4 @@
-name: Run Tests & Generate Allure Report
+name: All Tests & Allure Report
 
 permissions:
   contents: write
@@ -7,9 +7,11 @@ on:
   workflow_dispatch:
   schedule:
     - cron: '0 2 * * *'
+  push:
+    branches: [ main ]
 
 jobs:
-  test-and-report:
+  all-tests:
     runs-on: ubuntu-latest
     
     steps:
@@ -28,19 +30,28 @@ jobs:
         pip install allure-pytest
         playwright install chromium
     
-    - name: Run D365 tests with Allure (with screenshots & videos)
+    - name: Run D365 Tests
       env:
         D365_USERNAME: ${{ secrets.D365_USERNAME }}
         D365_PASSWORD: ${{ secrets.D365_PASSWORD }}
         HEADED: false
-        PWDEBUG: 0
       run: |
-        # Run tests and generate allure results with screenshots
-        pytest tests/d365/test_d365_sales_order.py -v \
+        pytest tests/d365/ -v \
           --alluredir=allure-results \
           --screenshot=on \
-          --video=retain-on-failure \
-          --tracing=retain-on-failure
+          --video=retain-on-failure
+      continue-on-error: true
+    
+    - name: Run FourHands Tests
+      env:
+        FH_USERNAME: ${{ secrets.FH_USERNAME }}
+        FH_PASSWORD: ${{ secrets.FH_PASSWORD }}
+        HEADED: false
+      run: |
+        pytest tests/fh/test_fh_pdp.py -v \
+          --alluredir=allure-results \
+          --screenshot=on \
+          --video=retain-on-failure
       continue-on-error: true
     
     - name: Generate Allure Report
@@ -51,6 +62,7 @@ jobs:
         allure_report: allure-report
         gh_pages: gh-pages
         allure_history: allure-history
+        keep_reports: 20
     
     - name: Deploy to GitHub Pages
       if: always()
