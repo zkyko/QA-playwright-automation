@@ -7,8 +7,6 @@ on:
   workflow_dispatch:
   schedule:
     - cron: '0 2 * * *'
-  push:
-    branches: [ main ]
 
 jobs:
   test-and-report:
@@ -27,15 +25,22 @@ jobs:
       run: |
         python -m pip install --upgrade pip
         pip install -r requirements.txt
+        pip install allure-pytest
         playwright install chromium
     
-    - name: Run tests with Allure
+    - name: Run D365 tests with Allure (with screenshots & videos)
       env:
         D365_USERNAME: ${{ secrets.D365_USERNAME }}
         D365_PASSWORD: ${{ secrets.D365_PASSWORD }}
         HEADED: false
+        PWDEBUG: 0
       run: |
-        pytest tests/d365/test_d365_sales_order.py::test_d365_login_page_loads -v --alluredir=allure-results
+        # Run tests and generate allure results with screenshots
+        pytest tests/d365/test_d365_sales_order.py -v \
+          --alluredir=allure-results \
+          --screenshot=on \
+          --video=retain-on-failure \
+          --tracing=retain-on-failure
       continue-on-error: true
     
     - name: Generate Allure Report
