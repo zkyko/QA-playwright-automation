@@ -1,9 +1,10 @@
 """
 BrowserStack Automate configuration for D365 F&O automation.
-Uses BrowserStack's capabilities-based approach (Non-SDK Integration).
+Non-SDK Integration approach with proper capabilities.
 """
 import os
 import json
+import urllib.parse
 from dotenv import load_dotenv
 
 # Load environment variables
@@ -14,14 +15,14 @@ BS_USERNAME = os.getenv("BROWSERSTACK_USERNAME", "")
 BS_ACCESS_KEY = os.getenv("BROWSERSTACK_ACCESS_KEY", "")
 
 # BrowserStack project/build settings
-BS_PROJECT = os.getenv("BROWSERSTACK_PROJECT_NAME", os.getenv("BS_PROJECT", "D365-Playwright-Python"))
+BS_PROJECT = os.getenv("BROWSERSTACK_PROJECT_NAME", os.getenv("BS_PROJECT", "FourHands & D365 Automation"))
 BS_BUILD = os.getenv("BROWSERSTACK_BUILD_NAME", os.getenv("BS_BUILD", "D365-FO-Demo"))
 
 
 def get_browserstack_capabilities():
     """
     Returns BrowserStack capabilities for Non-SDK Integration.
-    This matches the format from BrowserStack's capability generator.
+    This matches the format from your BrowserStack config.
     """
     desired_cap = {
         'browser': 'chrome',
@@ -43,12 +44,10 @@ def get_browserstack_capabilities():
     return desired_cap
 
 
-def get_cdp_url():
+def get_browserstack_cdp_url():
     """
-    DEPRECATED: Use get_browserstack_capabilities() instead.
-    
-    BrowserStack CDP URL with authentication.
-    Format from BrowserStack Playwright docs.
+    Get BrowserStack CDP URL with capabilities as query parameters.
+    This is the correct format for Playwright Non-SDK integration.
     """
     if not BS_USERNAME or not BS_ACCESS_KEY:
         raise ValueError(
@@ -56,9 +55,25 @@ def get_cdp_url():
             "Set BROWSERSTACK_USERNAME and BROWSERSTACK_ACCESS_KEY environment variables."
         )
     
-    # BrowserStack CDP endpoint with basic auth
-    # Format: wss://username:accessKey@cdp.browserstack.com/playwright
-    cdp_url = f"wss://{BS_USERNAME}:{BS_ACCESS_KEY}@cdp.browserstack.com/playwright"
+    # Build capabilities as query parameters
+    caps = {
+        'browser': 'chrome',
+        'browser_version': 'latest',
+        'os': 'Windows',
+        'os_version': '11',
+        'name': 'GitHub Actions Test',
+    }
+    
+    if BS_BUILD:
+        caps['build'] = BS_BUILD
+    if BS_PROJECT:
+        caps['project'] = BS_PROJECT
+    
+    # Build query string
+    cap_params = '&'.join([f'caps.{k}={urllib.parse.quote(str(v))}' for k, v in caps.items()])
+    
+    # BrowserStack CDP URL with authentication and capabilities
+    cdp_url = f"wss://{BS_USERNAME}:{BS_ACCESS_KEY}@cdp.browserstack.com/playwright?{cap_params}"
     
     return cdp_url
 

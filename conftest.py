@@ -20,7 +20,7 @@ from configs.playwright_config import (
 )
 from configs.browserstack_config import (
     is_browserstack_enabled,
-    get_cdp_url,
+    get_browserstack_cdp_url,
     get_browserstack_context_options
 )
 from utils.env import get_env
@@ -92,8 +92,11 @@ def playwright_browser(playwright: Playwright) -> Generator[Browser, None, None]
         browser.close()
     else:
         # BrowserStack execution via CDP
-        cdp_url = get_cdp_url()
+        cdp_url = get_browserstack_cdp_url()
+        print(f"\n🌐 Connecting to BrowserStack...")
+        print(f"CDP URL: {cdp_url[:50]}...")
         browser = playwright.chromium.connect_over_cdp(cdp_url)
+        print("✅ Connected to BrowserStack!")
         yield browser
         browser.close()
 
