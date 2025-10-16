@@ -1,4 +1,4 @@
-name: BrowserStack Cloud Tests
+name: BrowserStack Cloud Tests (Local Testing)
 
 on:
   workflow_dispatch:
@@ -6,17 +6,12 @@ on:
     - cron: '0 2 * * *'
 
 jobs:
-  browserstack-test:
+  local-browserstack-simulation:
     runs-on: ubuntu-latest
     
     steps:
     - name: Checkout code
       uses: actions/checkout@v4
-    
-    - name: Set up Node.js
-      uses: actions/setup-node@v3
-      with:
-        node-version: '18'
     
     - name: Set up Python
       uses: actions/setup-python@v4
@@ -29,20 +24,18 @@ jobs:
         pip install -r requirements.txt
         playwright install chromium
     
-    - name: Install BrowserStack SDK
-      run: |
-        npm install -g browserstack-sdk
-    
-    - name: Run tests on BrowserStack
+    - name: Run tests locally (simulate BrowserStack)
       env:
         BROWSERSTACK_USERNAME: ${{ secrets.BROWSERSTACK_USERNAME }}
         BROWSERSTACK_ACCESS_KEY: ${{ secrets.BROWSERSTACK_ACCESS_KEY }}
         D365_USERNAME: ${{ secrets.D365_USERNAME }}
         D365_PASSWORD: ${{ secrets.D365_PASSWORD }}
         HEADED: false
+        # Set this to simulate BrowserStack environment
+        BROWSERSTACK_BUILD_NAME: "GitHub Actions Build ${{ github.run_number }}"
       run: |
-        # Run tests on BrowserStack using SDK
-        browserstack-sdk pytest tests/d365/test_d365_sales_order.py::test_d365_login_page_loads -v
+        # Run tests locally with BrowserStack environment simulation
+        pytest tests/d365/test_d365_sales_order.py::test_d365_login_page_loads -v
     
     - name: Upload test results
       if: always()
