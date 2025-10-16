@@ -13,11 +13,6 @@ jobs:
     - name: Checkout code
       uses: actions/checkout@v4
     
-    - name: Set up Node.js
-      uses: actions/setup-node@v3
-      with:
-        node-version: '18'
-    
     - name: Set up Python
       uses: actions/setup-python@v4
       with:
@@ -29,20 +24,31 @@ jobs:
         pip install -r requirements.txt
         playwright install chromium
     
-    - name: Install BrowserStack SDK
-      run: |
-        npm install -g browserstack-sdk
-    
-    - name: Run tests on BrowserStack
+    - name: Run tests on BrowserStack via CDP
       env:
+        # BrowserStack credentials
         BROWSERSTACK_USERNAME: ${{ secrets.BROWSERSTACK_USERNAME }}
         BROWSERSTACK_ACCESS_KEY: ${{ secrets.BROWSERSTACK_ACCESS_KEY }}
+        
+        # D365 credentials for authentication
         D365_USERNAME: ${{ secrets.D365_USERNAME }}
         D365_PASSWORD: ${{ secrets.D365_PASSWORD }}
+        
+        # BrowserStack configuration
+        USE_BROWSERSTACK: "true"
+        BROWSERSTACK_BUILD_NAME: "GitHub Actions Build #${{ github.run_number }}"
+        BROWSERSTACK_PROJECT_NAME: "FourHands & D365 Automation"
+        
+        # Test configuration
         HEADED: false
       run: |
-        # Run tests on BrowserStack using SDK
-        browserstack-sdk pytest tests/d365/test_d365_sales_order.py::test_d365_login_page_loads -v
+        echo "🚀 Running tests on BrowserStack..."
+        echo "Build: GitHub Actions Build #${{ github.run_number }}"
+        echo "Project: FourHands & D365 Automation"
+        echo ""
+        
+        # Run the test
+        pytest tests/d365/test_d365_sales_order.py::test_d365_login_page_loads -v --tb=short
     
     - name: Upload test results
       if: always()
@@ -53,3 +59,15 @@ jobs:
           test-results/
           reports/
         if-no-files-found: ignore
+    
+    - name: Print BrowserStack Dashboard Link
+      if: always()
+      run: |
+        echo ""
+        echo "========================================"
+        echo "🎯 View test results on BrowserStack:"
+        echo "https://automate.browserstack.com/dashboard/v2"
+        echo ""
+        echo "Build Name: GitHub Actions Build #${{ github.run_number }}"
+        echo "Project: FourHands & D365 Automation"
+        echo "========================================"

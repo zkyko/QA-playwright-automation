@@ -14,8 +14,8 @@ BS_USERNAME = os.getenv("BROWSERSTACK_USERNAME", "")
 BS_ACCESS_KEY = os.getenv("BROWSERSTACK_ACCESS_KEY", "")
 
 # BrowserStack project/build settings
-BS_PROJECT = os.getenv("BS_PROJECT", "D365-Playwright-Python")
-BS_BUILD = os.getenv("BS_BUILD", "D365-FO-Demo")
+BS_PROJECT = os.getenv("BROWSERSTACK_PROJECT_NAME", os.getenv("BS_PROJECT", "D365-Playwright-Python"))
+BS_BUILD = os.getenv("BROWSERSTACK_BUILD_NAME", os.getenv("BS_BUILD", "D365-FO-Demo"))
 
 # Browser capabilities
 BS_BROWSER = os.getenv("BS_BROWSER", "chrome")
@@ -26,7 +26,7 @@ BS_OS_VERSION = os.getenv("BS_OS_VERSION", "11")
 # Execution settings
 BS_RESOLUTION = os.getenv("BS_RESOLUTION", "1920x1080")
 BS_LOCAL = os.getenv("BS_LOCAL", "false")
-BS_DEBUG = os.getenv("BS_DEBUG", "false")
+BS_DEBUG = os.getenv("BS_DEBUG", "true")
 BS_NETWORK_LOGS = os.getenv("BS_NETWORK_LOGS", "true")
 BS_CONSOLE_LOGS = os.getenv("BS_CONSOLE_LOGS", "errors")
 
@@ -69,17 +69,22 @@ def get_cdp_url():
             "Set BROWSERSTACK_USERNAME and BROWSERSTACK_ACCESS_KEY environment variables."
         )
     
-    # BrowserStack CDP URL format for Playwright
-    # Use simple format without complex capability encoding
+    # BrowserStack CDP URL format for Playwright with authentication
+    # Format: wss://USERNAME:ACCESS_KEY@cdp.browserstack.com/playwright?caps...
     cdp_url = (
-        f"wss://cdp.browserstack.com/playwright?"
+        f"wss://{urllib.parse.quote(BS_USERNAME)}:{urllib.parse.quote(BS_ACCESS_KEY)}@"
+        f"cdp.browserstack.com/playwright?"
         f"caps.browserName=chrome&"
         f"caps.browserVersion=latest&"
         f"caps.os=Windows&"
         f"caps.osVersion=11&"
         f"caps.projectName={urllib.parse.quote(BS_PROJECT)}&"
         f"caps.buildName={urllib.parse.quote(BS_BUILD)}&"
-        f"caps.sessionName={urllib.parse.quote(os.getenv('PYTEST_CURRENT_TEST', 'D365 Test'))}"
+        f"caps.sessionName={urllib.parse.quote(os.getenv('PYTEST_CURRENT_TEST', 'D365 Test'))}&"
+        f"caps.debug=true&"
+        f"caps.networkLogs=true&"
+        f"caps.video=true&"
+        f"caps.consoleLogs=verbose"
     )
     
     return cdp_url
@@ -93,11 +98,13 @@ def get_browserstack_context_options():
     import os
     
     return {
-        "viewport": {"width": 1920, "height": 1080},
+        "viewport": {"width": 1920, "height": 1080"},
         "ignore_https_errors": True,
-        "storage_state": str(PROJECT_ROOT / STORAGE_STATE_PATH) if os.path.exists(
-            PROJECT_ROOT / STORAGE_STATE_PATH
-        ) else None
+        "record_video_dir": None,  # BrowserStack handles video recording
+        # Don't use storage_state on BrowserStack - auth programmatically instead
+        # "storage_state": str(PROJECT_ROOT / STORAGE_STATE_PATH) if os.path.exists(
+        #     PROJECT_ROOT / STORAGE_STATE_PATH
+        # ) else None
     }
 
 
@@ -106,7 +113,12 @@ def is_browserstack_enabled():
     Check if BrowserStack execution is enabled.
     Can be triggered via environment variable or pytest config.
     """
-    return os.getenv("USE_BROWSERSTACK", "false").lower() == "true"
+    use_bs = os.getenv("USE_BROWSERSTACK", "false").lower()
+    build_name = os.getenv("BROWSERSTACK_BUILD_NAME", "")
+    
+    # Return True if USE_BROWSERSTACK is explicitly set to true
+    # OR if BROWSERSTACK_BUILD_NAME is set (indicates BrowserStack context)
+    return use_bs == "true" or bool(build_name)
 
 
 # Example usage in conftest.py or test files:
