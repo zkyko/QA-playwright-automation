@@ -98,7 +98,7 @@ def get_browserstack_context_options():
     import os
     
     return {
-        "viewport": {"width": 1920, "height": 1080"},
+        "viewport": {"width": 1920, "height": 1080},
         "ignore_https_errors": True,
         "record_video_dir": None,  # BrowserStack handles video recording
         # Don't use storage_state on BrowserStack - auth programmatically instead
