@@ -1,0 +1,125 @@
+"DESCRIPTION","DURATION IN MS","NAME","PARENT SUITE","START TIME","STATUS","STOP TIME","SUB SUITE","SUITE","TEST CLASS","TEST METHOD"
+"
+    TS-T1071: PDP > Increment Product Quantity
+    
+    Converted from: PDP_IncrementProduct_TS_T1071.java
+    
+    Steps:
+    1. Navigate to PDP
+    2. Click increment button multiple times
+    3. Verify quantity increases correctly
+    4. Add to cart and verify cart count
+    ","0","test_pdp_increment_product_quantity","tests.fh","Sat Oct 18 02:31:58 UTC 2025","skipped","Sat Oct 18 02:31:58 UTC 2025","","test_fh_pdp","",""
+"
+    TS-T1070: PDP > Add to Cart > Single Product
+    
+    Converted from: PDP_AddProductToCart_TS_T1070.java
+    
+    Steps:
+    1. Log into FH site (using storage state)
+    2. Search for a product and go to PDP
+    3. Click Add to Cart button
+    4. Verify cart reflects the product
+    5. Clean up - remove product from cart
+    ","0","test_pdp_add_product_to_cart","tests.fh","Sat Oct 18 02:31:58 UTC 2025","skipped","Sat Oct 18 02:31:58 UTC 2025","","test_fh_pdp","",""
+"
+    Test: Verify D365 login page loads correctly.
+    
+    This test works on BrowserStack without authentication.
+    It verifies the D365 URL is accessible and login page appears.
+    
+    Steps:
+        1. Navigate to D365 URL
+        2. Wait for page to load
+        3. Verify we get login page or dashboard
+    
+    Expected:
+        - Page loads successfully
+        - Either Microsoft login or D365 dashboard appears
+    ","0","D365 Login Page Loads","tests.d365","Sat Oct 18 02:31:57 UTC 2025","skipped","Sat Oct 18 02:31:57 UTC 2025","","test_d365_sales_order","",""
+"
+    Record D365 authentication session.
+    
+    IMPORTANT: Run this test manually with headed mode:
+        pytest tests/d365/test_d365_auth.py -k record --headed -s
+    
+    Steps:
+        1. Navigate to D365
+        2. Login manually
+        3. Wait for dashboard to load
+        4. Session is saved automatically
+    ","121185","test_record_d365_authentication","tests.d365","Sat Oct 18 02:26:42 UTC 2025","failed","Sat Oct 18 02:28:43 UTC 2025","","test_d365_auth","",""
+"
+    Test: Navigate to Sales Orders page in D365
+    
+    Note: This test requires authentication.
+    - Runs locally with saved auth
+    - Skips on BrowserStack (requires manual login)
+    
+    Steps:
+        1. Navigate to D365 dashboard
+        2. Expand navigation pane
+        3. Click Modules
+        4. Click Accounts Receivable  
+        5. Click All Sales Orders
+    
+    Expected:
+        - Successfully navigates to Sales Orders page
+    ","0","Navigate to Sales Orders","tests.d365","Sat Oct 18 02:31:57 UTC 2025","skipped","Sat Oct 18 02:31:57 UTC 2025","","test_d365_sales_order","",""
+"
+    Test: Create a new sales order in D365
+    
+    Note: Requires authentication. Skips on BrowserStack.
+    
+    Steps:
+        1. Navigate to Sales Orders
+        2. Create new order
+        3. Select customer
+        4. Select delivery mode
+        5. Add item
+        6. Cancel order (cleanup)
+    ","0","Create Sales Order","tests.d365","Sat Oct 18 02:31:57 UTC 2025","skipped","Sat Oct 18 02:31:57 UTC 2025","","test_d365_sales_order","",""
+"
+    Verify D365 storage state exists and is valid.
+    
+    This test runs quickly to check if authentication is set up.
+    ","0","test_verify_d365_storage_state","tests.d365","Sat Oct 18 02:28:44 UTC 2025","failed","Sat Oct 18 02:28:44 UTC 2025","","test_d365_auth","",""
+"
+    Quick smoke test to verify Add to Cart button is visible on PDP.
+    ","0","test_pdp_add_to_cart_button_visible","tests.fh","Sat Oct 18 02:31:58 UTC 2025","skipped","Sat Oct 18 02:31:58 UTC 2025","","test_fh_pdp","",""
+"
+    Test: Create a complete sales order in D365
+    
+    Steps from Playwright Codegen:
+    1. Navigate to D365 Dashboard
+    2. Expand navigation pane
+    3. Go to Modules → Accounts Receivable → Orders → All Sales Orders
+    4. Click New
+    5. Select Customer: 100001 (Nicole Roby Designs)
+    6. Select Delivery Mode: TXQA-B2B
+    7. Click OK
+    8. Select Item (opens item picker)
+    9. Select an item
+    10. Save
+    11. Go back
+    
+    Note: Works both locally (with saved auth) and BrowserStack (programmatic login)
+    ","33356","Create Sales Order - Complete Flow","tests.d365","Sat Oct 18 02:29:47 UTC 2025","broken","Sat Oct 18 02:30:20 UTC 2025","","test_d365_create_sales_order_complete","",""
+"
+    Test: Verify sales order form elements are visible.
+    
+    Note: Requires authentication. Skips on BrowserStack.
+    ","0","Verify Form Elements","tests.d365","Sat Oct 18 02:31:57 UTC 2025","skipped","Sat Oct 18 02:31:57 UTC 2025","","test_d365_sales_order","",""
+"
+    TS-T1434/T1435: PDP > Availability ATP Messaging
+    
+    Converted from: PDP_AvailabilityATPMessaging tests
+    
+    Verify ATP (Available to Promise) messaging appears correctly.
+    ","0","test_pdp_availability_messaging","tests.fh","Sat Oct 18 02:31:59 UTC 2025","skipped","Sat Oct 18 02:31:59 UTC 2025","","test_fh_pdp","",""
+"
+    Quick smoke test: Verify sales order form loads
+    
+    Just navigates and opens the new order form.
+    Faster than full creation test.
+    ","33331","Create Sales Order - Verify Form Loads","tests.d365","Sat Oct 18 02:31:24 UTC 2025","broken","Sat Oct 18 02:31:57 UTC 2025","","test_d365_create_sales_order_complete","",""
