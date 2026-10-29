@@ -1,0 +1,9 @@
+
+⚠️  No storage state found - will need to login
+
+🔐 Logging into D365 as: nbhandari@austin.fourhands.com
+⚠️  Login failed: Page.goto: net::ERR_NAME_NOT_RESOLVED at https://fourhands-test.sandbox.operations.dynamics.com/?cmp=FH&mi=DefaultDashboard
+Call log:
+  - navigating to "https://fourhands-test.sandbox.operations.dynamics.com/?cmp=FH&mi=DefaultDashboard", waiting until "load"
+
+   Tests requiring authentication will be skipped
